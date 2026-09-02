@@ -97,6 +97,9 @@ def delete_note(note_id):
         return jsonify({'error': 'Note non trouvée'}), 404
         
     return jsonify({'message': 'Note supprimée avec succès'}), 200
+@app.route('/ping, methods=['GET'])
+def ping():
+  return {"message":"Le deploiement continu fonctionne"}, 200
 
 if __name__ == '__main__':
     # Tente d'initialiser la table au démarrage
@@ -110,6 +113,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('APP_PORT', 8000))
     app.run(host='0.0.0.0', port=port)
      
-@app.route('/ping', methods=['GET'])
-def ping():
-    return {"message": "Le Déploiement Continu fonctionne parfaitement !"}, 200
+
