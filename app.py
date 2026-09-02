@@ -97,7 +97,7 @@ def delete_note(note_id):
         return jsonify({'error': 'Note non trouvée'}), 404
         
     return jsonify({'message': 'Note supprimée avec succès'}), 200
-@app.route('/ping, methods=['GET'])
+@app.route('/ping', methods=['GET'])
 def ping():
   return {"message":"Le deploiement continu fonctionne"}, 200
 
