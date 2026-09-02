@@ -109,3 +109,7 @@ if __name__ == '__main__':
     # Lancement du serveur Flask
     port = int(os.environ.get('APP_PORT', 8000))
     app.run(host='0.0.0.0', port=port)
+     
+    @app.route('/ping', methods=['GET'])
+     def ping():
+     return {"message": "Le Déploiement Continu fonctionne parfaitement !"}, 200
