@@ -3,11 +3,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 # Charge les variables d'environnement depuis le fichier .env
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 
 # Fonction utilitaire pour se connecter à la base de données
 def get_db_connection():
