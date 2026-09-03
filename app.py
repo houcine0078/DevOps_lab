@@ -244,5 +244,24 @@ def update_delete_note(current_user, note_id):
         conn.close()
         return jsonify({'message': 'Note supprimée avec succès'}), 200
 
+
+# ROUTE D'ADMINISTRATION (Liste des utilisateurs)
+@app.route('/api/users', methods=['GET'])
+@token_required
+def get_users(current_user):
+    # Sécurité absolue : on bloque immédiatement si ce n'est pas l'admin
+    if current_user['role'] != 'admin':
+        return jsonify({'message': 'Accès refusé : privilèges administrateur requis.'}), 403
+        
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    # On récupère les infos sauf les mots de passe !
+    cur.execute('SELECT id, username, role FROM users ORDER BY id ASC;')
+    users = [dict(row) for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    
+    return jsonify(users), 200
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
