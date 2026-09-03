@@ -54,7 +54,8 @@ def handle_notes():
             'INSERT INTO notes (title, content, status) VALUES (%s, %s, %s) RETURNING *;',
             (data['title'], data['content'], data.get('status', 'À faire'))
         )
-        new_note = cur.fetchone()
+        new_note = dict(cur.fetchone())
+
         conn.commit()
         cur.close()
         conn.close()
@@ -62,7 +63,7 @@ def handle_notes():
         
     elif request.method == 'GET':
         cur.execute('SELECT * FROM notes ORDER BY id ASC;')
-        notes = cur.fetchall()
+        notes = [dict(row) for row in cur.fetchall()]
         cur.close()
         conn.close()
         return jsonify(notes), 200
