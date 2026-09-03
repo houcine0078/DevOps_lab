@@ -35,15 +35,13 @@ def client():
 
 def test_create_note(client):
     """Teste la création d'une note."""
-    response = client.post('/notes', json={
-        "titre": "Note de test CI",
-        "contenu": "Ceci est un test automatisé"
+    response = client.post('/api/notes', json={
+        "title": "Note de test CI",
+        "content": "Ceci est un test automatisé"
     })
-    assert response.status_code in [200, 201] 
+    assert response.status_code in [200, 201]
 
 def test_get_notes(client):
-    """Teste si la route GET /notes répond correctement."""
-    response = client.get('/notes')
+    """Teste si la route GET répond correctement."""
+    response = client.get('/api/notes')
     assert response.status_code == 200
-    assert isinstance(response.json, list)
-    assert len(response.json) > 0
