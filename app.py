@@ -121,6 +121,56 @@ def login():
 
     return jsonify({'message': 'Identifiants incorrects'}), 401
 
+# ROUTE D'INSCRIPTION
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({'message': 'Données incomplètes'}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute('SELECT id FROM users WHERE username = %s', (data['username'],))
+    if cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify({'message': 'Ce nom d\'utilisateur est déjà pris.'}), 409
+        
+    hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
+    cur.execute('INSERT INTO users (username, password) VALUES (%s, %s)', (data['username'], hashed_pw))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Compte créé avec succès ! Vous pouvez vous connecter.'}), 201
+
+
+# ROUTE DE CHANGEMENT DE MOT DE PASSE
+@app.route('/api/change-password', methods=['PUT'])
+@token_required
+def change_password(current_user):
+    data = request.json
+    if not data or not data.get('current_password') or not data.get('new_password'):
+        return jsonify({'message': 'Données incomplètes'}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    cur.execute('SELECT password FROM users WHERE id = %s', (current_user['id'],))
+    user_db = cur.fetchone()
+    
+    if not check_password_hash(user_db['password'], data['current_password']):
+        cur.close()
+        conn.close()
+        return jsonify({'message': 'Mot de passe actuel incorrect.'}), 403
+        
+    new_hashed_pw = generate_password_hash(data['new_password'], method='pbkdf2:sha256')
+    cur.execute('UPDATE users SET password = %s WHERE id = %s', (new_hashed_pw, current_user['id']))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Mot de passe mis à jour avec succès.'}), 200
+
 
 # 4. ROUTE SÉCURISÉE DES NOTES (Utilise le décorateur défini plus haut)
 @app.route('/api/notes', methods=['GET', 'POST'])
