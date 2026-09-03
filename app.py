@@ -152,5 +152,47 @@ def handle_notes(current_user):
         conn.close()
         return jsonify(notes), 200
 
+# 5. ROUTES DE MODIFICATION ET SUPPRESSION (CRUD complet & RBAC)
+@app.route('/api/notes/<int:note_id>', methods=['PUT', 'DELETE'])
+@token_required
+def update_delete_note(current_user, note_id):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # 1. Vérifier si la note existe
+    cur.execute('SELECT * FROM notes WHERE id = %s', (note_id,))
+    note = cur.fetchone()
+    
+    if not note:
+        cur.close()
+        conn.close()
+        return jsonify({'message': 'Note introuvable'}), 404
+        
+    # 2. Logique RBAC : L'utilisateur n'est pas admin ET n'est pas l'auteur de la note
+    if current_user['role'] != 'admin' and note['user_id'] != current_user['id']:
+        cur.close()
+        conn.close()
+        return jsonify({'message': 'Accès refusé : vous ne pouvez modifier que vos propres notes.'}), 403
+
+    if request.method == 'PUT':
+        data = request.json
+        # On met à jour le statut (ex: passer de "À faire" à "Terminé")
+        cur.execute(
+            'UPDATE notes SET status = %s WHERE id = %s RETURNING *;',
+            (data.get('status', note['status']), note_id)
+        )
+        updated_note = dict(cur.fetchone())
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify(updated_note), 200
+        
+    elif request.method == 'DELETE':
+        cur.execute('DELETE FROM notes WHERE id = %s;', (note_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'message': 'Note supprimée avec succès'}), 200
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
