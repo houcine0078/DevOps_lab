@@ -1,31 +1,6 @@
-import os
 import pytest
-import psycopg2
+from unittest.mock import patch, MagicMock
 from app import app
-
-# Cette fonction s'exécute automatiquement avant les tests pour préparer la DB
-@pytest.fixture(autouse=True)
-def setup_db():
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432"),
-        dbname=os.getenv("DB_NAME", "notesdb"),
-        user=os.getenv("DB_USER", "notesuser"),
-        password=os.getenv("DB_PASSWORD", "secret")
-    )
-    cur = conn.cursor()
-    # On crée la table de test avec exactement les mêmes colonnes que ton API
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS notes (
-            id SERIAL PRIMARY KEY,
-            titre VARCHAR(255) NOT NULL,
-            contenu TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    cur.close()
-    conn.close()
 
 @pytest.fixture
 def client():
@@ -33,15 +8,43 @@ def client():
     with app.test_client() as client:
         yield client
 
-def test_create_note(client):
-    """Teste la création d'une note."""
+# Le décorateur @patch dit à Python : "Remplace la vraie fonction get_db_connection par un Mock (une doublure)"
+@patch('app.get_db_connection')
+def test_create_note(mock_get_db, client):
+    """Teste la création d'une note en simulant la base de données."""
+    # 1. On configure notre fausse base de données pour qu'elle ne plante pas
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    # On simule ce que PostgreSQL est censé nous répondre
+    mock_cursor.fetchone.return_value = {
+        "id": 1, 
+        "title": "Note de test CI", 
+        "content": "Ceci est un test automatisé", 
+        "status": "À faire"
+    }
+
+    # 2. On lance la vraie requête
     response = client.post('/api/notes', json={
         "title": "Note de test CI",
         "content": "Ceci est un test automatisé"
     })
+    
+    # 3. On vérifie que ça passe
     assert response.status_code in [200, 201]
 
-def test_get_notes(client):
-    """Teste si la route GET répond correctement."""
+@patch('app.get_db_connection')
+def test_get_notes(mock_get_db, client):
+    """Teste si la route GET répond correctement avec une DB simulée."""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    # On simule une base de données vide
+    mock_cursor.fetchall.return_value = []
+
     response = client.get('/api/notes')
     assert response.status_code == 200
