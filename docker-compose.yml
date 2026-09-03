@@ -1,9 +1,59 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    container_name: devops_app_container
-    ports:
-      - "3000:3000"
+  db:
+    image: postgres:16
+    container_name: notes_db
     restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - notes_network
+
+  api:
+    #  On télécharge l'image depuis Docker Hub !
+    image: houcine001/notes-api:latest
+    container_name: notes_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    depends_on:
+      - db
+    networks:
+      - notes_network
+  
+  #  SERVICE FRONTEND
+  notes_frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      DOCKER_API_VERSION: "1.40"
+    volumes:
+      # Permet à Watchtower de contrôler les autres conteneurs Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    # On lui dit de vérifier les mises à jour toutes les 30 secondes (parfait pour nos tests)
+    command: --interval 30
+    networks:
+      - notes_network
+
+volumes:
+  pgdata:
+
+networks:
+  notes_network:
+    driver: bridge
