@@ -173,34 +173,40 @@ def change_password(current_user):
 
 
 # 4. ROUTE SÉCURISÉE DES NOTES (Utilise le décorateur défini plus haut)
-@app.route('/api/notes', methods=['GET', 'POST'])
+@app.route('/api/notes', methods=['POST'])
 @token_required
-def handle_notes(current_user):
+def create_note(current_user):
+    data = request.json
+    if not data or not data.get('title') or not data.get('content'):
+        return jsonify({'message': 'Données manquantes'}), 400
+
+    # Nouvelles colonnes avec valeurs par défaut
+    priority = data.get('priority', 'P4')
+    tags = data.get('tags', '')
+    status = data.get('status', 'À faire')
+
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    if request.method == 'POST':
-        data = request.json
-        cur.execute(
-            'INSERT INTO notes (title, content, status, user_id) VALUES (%s, %s, %s, %s) RETURNING *;',
-            (data['title'], data['content'], data.get('status', 'À faire'), current_user['id'])
-        )
-        new_note = dict(cur.fetchone())
+    # On gère l'ajout des colonnes dynamiquement si elles n'existent pas (Astuce DevOps)
+    try:
+        cur.execute('ALTER TABLE notes ADD COLUMN IF NOT EXISTS priority VARCHAR(10) DEFAULT \'P4\';')
+        cur.execute('ALTER TABLE notes ADD COLUMN IF NOT EXISTS tags VARCHAR(255) DEFAULT \'\';')
         conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify(new_note), 201
-        
-    elif request.method == 'GET':
-        if current_user['role'] == 'admin':
-            cur.execute('SELECT * FROM notes ORDER BY id ASC;')
-        else:
-            cur.execute('SELECT * FROM notes WHERE user_id = %s ORDER BY id ASC;', (current_user['id'],))
-            
-        notes = [dict(row) for row in cur.fetchall()]
-        cur.close()
-        conn.close()
-        return jsonify(notes), 200
+    except Exception as e:
+        conn.rollback()
+
+    # Insertion de la nouvelle note
+    cur.execute(
+        'INSERT INTO notes (title, content, status, user_id, priority, tags) VALUES (%s, %s, %s, %s, %s, %s) RETURNING *;',
+        (data['title'], data['content'], status, current_user['id'], priority, tags)
+    )
+    new_note = dict(cur.fetchone())
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return jsonify(new_note), 201
 
 # 5. ROUTES DE MODIFICATION ET SUPPRESSION (CRUD complet & RBAC)
 @app.route('/api/notes/<int:note_id>', methods=['PUT', 'DELETE'])
