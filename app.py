@@ -173,6 +173,26 @@ def change_password(current_user):
 
 
 # 4. ROUTE SÉCURISÉE DES NOTES (Utilise le décorateur défini plus haut)
+# 1. ROUTE POUR LIRE LES NOTES (GET) - Celle qui manquait pour Pytest
+@app.route('/api/notes', methods=['GET'])
+@token_required
+def get_notes(current_user):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # L'admin peut voir toutes les notes, un utilisateur normal voit seulement les siennes
+    if current_user['role'] == 'admin':
+        cur.execute('SELECT * FROM notes ORDER BY id DESC;')
+    else:
+        cur.execute('SELECT * FROM notes WHERE user_id = %s ORDER BY id DESC;', (current_user['id'],))
+        
+    notes = [dict(row) for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    
+    return jsonify(notes), 200
+
+# 2. ROUTE POUR CRÉER UNE NOTE (POST) - Celle que nous avons modifiée
 @app.route('/api/notes', methods=['POST'])
 @token_required
 def create_note(current_user):
@@ -180,7 +200,6 @@ def create_note(current_user):
     if not data or not data.get('title') or not data.get('content'):
         return jsonify({'message': 'Données manquantes'}), 400
 
-    # Nouvelles colonnes avec valeurs par défaut
     priority = data.get('priority', 'P4')
     tags = data.get('tags', '')
     status = data.get('status', 'À faire')
@@ -188,7 +207,6 @@ def create_note(current_user):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    # On gère l'ajout des colonnes dynamiquement si elles n'existent pas (Astuce DevOps)
     try:
         cur.execute('ALTER TABLE notes ADD COLUMN IF NOT EXISTS priority VARCHAR(10) DEFAULT \'P4\';')
         cur.execute('ALTER TABLE notes ADD COLUMN IF NOT EXISTS tags VARCHAR(255) DEFAULT \'\';')
@@ -196,7 +214,6 @@ def create_note(current_user):
     except Exception as e:
         conn.rollback()
 
-    # Insertion de la nouvelle note
     cur.execute(
         'INSERT INTO notes (title, content, status, user_id, priority, tags) VALUES (%s, %s, %s, %s, %s, %s) RETURNING *;',
         (data['title'], data['content'], status, current_user['id'], priority, tags)
@@ -207,7 +224,6 @@ def create_note(current_user):
     conn.close()
     
     return jsonify(new_note), 201
-
 # 5. ROUTES DE MODIFICATION ET SUPPRESSION (CRUD complet & RBAC)
 @app.route('/api/notes/<int:note_id>', methods=['PUT', 'DELETE'])
 @token_required
