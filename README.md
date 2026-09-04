@@ -1,45 +1,62 @@
-# 📝 NoteApp - Plateforme DevOps de Gestion de Tâches
+# 📝 NoteApp - Plateforme DevOps & Task Management
 
-NoteApp est une application Full-Stack d'entreprise conçue pour démontrer une architecture moderne, sécurisée et entièrement conteneurisée. Elle intègre un système d'authentification par jeton (JWT), un contrôle d'accès basé sur les rôles (RBAC), et un déploiement orchestré via Docker.
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
 
-## ✨ Fonctionnalités Principales
+NoteApp est une application Full-Stack d'entreprise conçue pour démontrer une architecture moderne, sécurisée et entièrement conteneurisée. Elle implémente les meilleures pratiques DevOps, incluant un build Multi-Stage, un réseau isolé, et une authentification JWT avec contrôle d'accès basé sur les rôles (RBAC).
 
-* **Sécurité & Authentification (JWT) :** Connexion sécurisée avec génération de tokens pour protéger les endpoints de l'API.
-* **Contrôle d'Accès (RBAC) :** 
-  * **Administrateur :** Vision globale de toutes les tâches, gestion des utilisateurs, et accès au panneau d'administration.
-  * **Utilisateur Standard :** Espace cloisonné limité à la création et gestion de ses propres tâches.
-* **CRUD Complet :** Création, lecture, mise à jour (statut) et suppression des notes.
-* **Gestion de Profil :** Interface sécurisée de modification des mots de passe.
-* **Déploiement Multi-Stage :** Frontend React compilé et distribué via un serveur web Nginx ultra-léger.
+---
 
-## 🛠️ Stack Technique & DevOps
+## 🏛️ Architecture de l'Infrastructure
 
-**Frontend**
-* React / Vite
-* Tailwind CSS (UI/UX)
-* Nginx (Serveur Web de production)
+Le projet repose sur une architecture microservices orchestrée par Docker Compose. Le schéma ci-dessous illustre le flux de données et la ségrégation des conteneurs :
 
-**Backend**
-* Python 3 / Flask
-* PyJWT & Werkzeug Security (Cryptographie)
-* PostgreSQL (Base de données relationnelle)
+```mermaid
+graph TD
+    Client([💻 Navigateur Web]) -->|HTTP / Port 80| Nginx[🖥️ Frontend: Nginx + React SPA]
+    
+    subgraph "Réseau Interne Docker (Isolé)"
+        Nginx -->|Requêtes API / Port 8000| API[⚙️ Backend: Flask API + JWT]
+        API <-->|Requêtes SQL / Port 5432| DB[(🗄️ PostgreSQL)]
+    end
 
-**Infrastructure & DevOps**
-* Docker & Docker Compose (Conteneurisation et Orchestration)
-* Watchtower (Mise à jour continue)
-* Architecture réseau isolée entre le client, l'API et la base de données.
+    Watchtower([🔄 Watchtower]) -.->|Surveille & Met à jour| Nginx
+    Watchtower -.->|Surveille & Met à jour| API
 
-## 🚀 Guide de Démarrage Rapide (Quick Start)
+sequenceDiagram
+    participant U as Utilisateur
+    participant F as Frontend (React)
+    participant A as API (Flask)
+    participant D as Base de Données
 
-L'application est conçue pour être portable et déployable en quelques minutes sur n'importe quel environnement (Windows, Mac, Linux).
+    U->>F: Saisie Identifiants
+    F->>A: POST /api/login
+    A->>D: Vérification Hash (Bcrypt)
+    D-->>A: User valide + Rôle (Admin/User)
+    A-->>F: Retourne Token JWT
+    F->>F: Stockage Token (LocalStorage)
+    
+    U->>F: Demande d'accès aux utilisateurs
+    F->>A: GET /api/users (Header: Bearer Token)
+    A->>A: Décodage JWT & Vérification Rôle
+    alt Si Rôle == Admin
+        A-->>F: Retourne la liste (200 OK)
+    else Si Rôle == User
+        A-->>F: Accès Refusé (403 Forbidden)
+    end
 
-### Prérequis
-* [Docker](https://www.docker.com/) installé et en cours d'exécution.
-* [Git](https://git-scm.com/) installé.
-
-### Installation
-
-1. **Cloner le dépôt :**
-   ```bash
-   git clone [https://github.com/houcine0078/DevOps_lab.git](https://github.com/houcine0078/DevOps_lab.git)
-   cd DevOps_lab
+DevOps_lab/
+├── frontend/                   # Interface Utilisateur (React)
+│   ├── src/                    # Code source React (App.jsx, main.jsx...)
+│   ├── Dockerfile              # Build Multi-Stage (Node 20 -> Nginx)
+│   ├── nginx.conf              # Configuration de routage SPA
+│   └── package.json            # Dépendances NPM
+├── app.py                      # Cœur de l'API RESTful Python/Flask
+├── test_app.py                 # Tests automatisés (Pytest avec Mocking JWT)
+├── requirements.txt            # Dépendances Python
+├── Dockerfile                  # Build du backend Python
+├── docker-compose.yml          # Orchestration des services
+└── README.md                   # Documentation technique
