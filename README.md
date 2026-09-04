@@ -1,72 +1,45 @@
-# 📝 API de Gestion de Notes - Projet DevOps
+# 📝 NoteApp - Plateforme DevOps de Gestion de Tâches
 
-Une API RESTful développée en Python (Flask) pour la gestion de notes, avec une base de données PostgreSQL, le tout orchestré via Docker Compose. 
+NoteApp est une application Full-Stack d'entreprise conçue pour démontrer une architecture moderne, sécurisée et entièrement conteneurisée. Elle intègre un système d'authentification par jeton (JWT), un contrôle d'accès basé sur les rôles (RBAC), et un déploiement orchestré via Docker.
 
-Ce projet démontre les bonnes pratiques DevOps : conteneurisation, sécurité (non-root user), gestion des variables d'environnement, et persistance des données.
+## ✨ Fonctionnalités Principales
 
-## 🏗️ Architecture et Schéma
+* **Sécurité & Authentification (JWT) :** Connexion sécurisée avec génération de tokens pour protéger les endpoints de l'API.
+* **Contrôle d'Accès (RBAC) :** 
+  * **Administrateur :** Vision globale de toutes les tâches, gestion des utilisateurs, et accès au panneau d'administration.
+  * **Utilisateur Standard :** Espace cloisonné limité à la création et gestion de ses propres tâches.
+* **CRUD Complet :** Création, lecture, mise à jour (statut) et suppression des notes.
+* **Gestion de Profil :** Interface sécurisée de modification des mots de passe.
+* **Déploiement Multi-Stage :** Frontend React compilé et distribué via un serveur web Nginx ultra-léger.
 
-Le projet repose sur deux services isolés mais connectés via un réseau Docker interne, avec un volume pour assurer la sauvegarde des données de la base.
+## 🛠️ Stack Technique & DevOps
 
-```mermaid
-graph TD
-    Client[Client / curl] -->|Port 8000| API[API Flask<br>Conteneur: notes_api]
-    API -->|Réseau interne<br>notes_network| DB[(PostgreSQL<br>Conteneur: notes_db)]
-    DB -->|Persistance| Volume[Volume Docker<br>pgdata]
-```
+**Frontend**
+* React / Vite
+* Tailwind CSS (UI/UX)
+* Nginx (Serveur Web de production)
 
-## ⚙️ Prérequis
+**Backend**
+* Python 3 / Flask
+* PyJWT & Werkzeug Security (Cryptographie)
+* PostgreSQL (Base de données relationnelle)
 
-- [Docker](https://docs.docker.com/get-docker/) et Docker Compose installés sur votre machine.
-- Git pour récupérer le code source.
+**Infrastructure & DevOps**
+* Docker & Docker Compose (Conteneurisation et Orchestration)
+* Watchtower (Mise à jour continue)
+* Architecture réseau isolée entre le client, l'API et la base de données.
 
-## 🚀 Installation et Lancement (en 3 étapes)
+## 🚀 Guide de Démarrage Rapide (Quick Start)
 
-1. **Cloner le dépôt**
+L'application est conçue pour être portable et déployable en quelques minutes sur n'importe quel environnement (Windows, Mac, Linux).
+
+### Prérequis
+* [Docker](https://www.docker.com/) installé et en cours d'exécution.
+* [Git](https://git-scm.com/) installé.
+
+### Installation
+
+1. **Cloner le dépôt :**
    ```bash
-   git clone https://github.com/houcine0078/DevOps_lab.git
+   git clone [https://github.com/houcine0078/DevOps_lab.git](https://github.com/houcine0078/DevOps_lab.git)
    cd DevOps_lab
-   ```
-
-2. **Configurer l'environnement**
-   Copiez le fichier d'exemple pour créer votre fichier `.env` local (qui sera ignoré par Git) :
-   ```bash
-   cp .env.example .env
-   ```
-   *(Modifiez le mot de passe dans `.env` si vous le souhaitez, en gardant `DB_HOST=db`).*
-
-3. **Lancer l'application en une commande**
-   ```bash
-   docker compose up -d
-   ```
-   L'API est maintenant accessible sur `http://localhost:8000`.
-
-## 🧪 Tester les routes de l'API
-
-Voici les commandes `curl` pour tester les 4 opérations CRUD :
-
-**1. Créer une note (POST)**
-```bash
-curl -X POST http://localhost:8000/notes      -H "Content-Type: application/json"      -d '{"titre":"Ma première note","contenu":"Le volume Docker fonctionne !"}'
-```
-
-**2. Lister toutes les notes (GET)**
-```bash
-curl http://localhost:8000/notes
-```
-
-**3. Lire une note spécifique (GET)**
-```bash
-curl http://localhost:8000/notes/1
-```
-
-**4. Supprimer une note (DELETE)**
-```bash
-curl -X DELETE http://localhost:8000/notes/1
-```
-
-## 🧹 Arrêter l'application
-Pour stopper les conteneurs proprement sans perdre vos données :
-```bash
-docker compose down
-```
