@@ -404,22 +404,7 @@ jobs:
         run: pytest test_app.py -v
 ```
 
----
 
-## 🗺️ Roadmap
-
-- [x] Authentification JWT + RBAC
-- [x] CRUD des tâches
-- [x] Conteneurisation complète (Docker Compose)
-- [ ] Refresh tokens
-- [ ] Tags, priorités et dates d'échéance
-- [ ] Dashboard analytics
-- [ ] Notifications (email/push)
-- [ ] Tests end-to-end (Cypress/Playwright)
-- [ ] HTTPS + reverse proxy en production
-- [ ] Migrations versionnées (Alembic)
-
----
 
 ## 🤝 Contribuer
 
